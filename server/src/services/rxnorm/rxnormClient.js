@@ -4,6 +4,7 @@ const config = require('../../config');
 const { requestJson } = require('../../util/http');
 const logger = require('../../util/logger');
 const snapshot = require('./snapshot.json');
+const { strengthFromComponents } = require('./strength');
 
 /**
  * RxNorm lookups against the NIH / National Library of Medicine RxNav REST API.
@@ -71,15 +72,17 @@ async function getConcept(rxcui) {
   return cached(key, async () => {
     const props = await rxnav(`/rxcui/${encodeURIComponent(rxcui)}/properties.json`);
     if (!props || !props.properties) return null;
-    const related = await rxnav(`/rxcui/${encodeURIComponent(rxcui)}/related.json?tty=IN+PIN+BN+DF`);
+    const related = await rxnav(`/rxcui/${encodeURIComponent(rxcui)}/related.json?tty=IN+PIN+BN+DF+SCDC`);
     const groups = (related && related.relatedGroup && related.relatedGroup.conceptGroup) || [];
     const ingredients = [];
     const brands = [];
+    const components = [];
     let doseForm = props.properties.doseFormName || null;
     for (const group of groups) {
       for (const concept of group.conceptProperties || []) {
         if (group.tty === 'BN') brands.push(concept.name);
         else if (group.tty === 'DF') doseForm = doseForm || concept.name;
+        else if (group.tty === 'SCDC') components.push(concept.name);
         else ingredients.push({ rxcui: concept.rxcui, name: concept.name });
       }
     }
@@ -88,6 +91,7 @@ async function getConcept(rxcui) {
       name: props.properties.name,
       tty: props.properties.tty,
       doseForm,
+      strength: strengthFromComponents(components),
       ingredients,
       brands,
       source: 'rxnav-live',
@@ -209,7 +213,8 @@ function snapshotInfo() {
     source: snapshot.source,
     generatedAt: snapshot.generatedAt,
     conceptCount: Object.keys(snapshot.concepts).length,
-    illustrative: snapshot.source === 'bundled-illustrative' && !isLive(),
+    // True only for hand-written demo codes. A snapshot pulled from RxNav holds real RxCUIs.
+    illustrative: snapshot.source !== 'rxnav-live' && !isLive(),
   };
 }
 

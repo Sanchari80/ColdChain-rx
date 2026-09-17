@@ -72,6 +72,8 @@ function describe(alert) {
         title: `On the way: ${alert.drug}`,
         body: [place, courier ? `with ${courier}` : null, breached ? `out of range ${current}` : current].filter(Boolean).join(' · '),
       };
+    case 'requested':
+      return { title: `Requested: ${alert.drug}`, body: [place, 'Waiting for the pharmacist'].filter(Boolean).join(' · ') };
     case 'blocked':
       return { title: `Blocked: ${alert.drug}`, body: [place, 'Stopped at the pharmacy safety check'].filter(Boolean).join(' · ') };
     case 'delivered-quarantine':

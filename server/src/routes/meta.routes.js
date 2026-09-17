@@ -37,7 +37,9 @@ router.get('/capabilities', (req, res) => {
       release: 'FHIR R4',
     },
     formulary: {
-      source: formulary.illustrative ? 'On-premise formulary snapshot' : 'NIH/NLM RxNav',
+      source: formulary.mode === 'rxnav-live'
+        ? 'NIH/NLM RxNav (live)'
+        : formulary.illustrative ? 'Illustrative formulary snapshot' : 'NIH/NLM RxNav snapshot',
       updated: formulary.generatedAt || null,
       productCount: formulary.conceptCount ?? null,
       local: Boolean(formulary.illustrative),

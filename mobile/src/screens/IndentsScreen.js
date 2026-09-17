@@ -111,7 +111,7 @@ function IndentCard({ item, index, onPress, animate }) {
 export function IndentsScreen() {
   const { colors, space, radius, alpha } = useTheme();
   const { indents, loading, refresh, lastError, lastSyncedAt } = useData();
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const { push } = useNav();
   const [filter, setFilter] = useState('open');
   const firstLoad = useRef(true);
@@ -141,6 +141,10 @@ export function IndentsScreen() {
           message={lastError}
           action={<MedButton label="Try again" variant="quiet" onPress={refresh} style={{ marginTop: 8 }} />}
         />
+      ) : null}
+
+      {can('indent:request') ? (
+        <MedButton label="Request medication" onPress={() => push('request')} full />
       ) : null}
 
       {attention > 0 ? (

@@ -26,6 +26,8 @@ Demo accounts: `PHARM2201` / `8890` (pharmacist) and `NUR9931` / `4417` (nurse).
 | GET | `/indents?ward=&status=` | `indent:read` |
 | GET | `/indents/:id` | `indent:read` |
 | GET | `/indents/couriers` | `indent:read` |
+| GET | `/indents/orderable` | `indent:request` |
+| POST | `/indents/requests` `{ prescriptionId, doses, priority, note }` | `indent:request` |
 | POST | `/indents/:id/verify` | `indent:verify` |
 | POST | `/indents/:id/dispense` | `indent:dispense` |
 | POST | `/indents/:id/receive` | `indent:receive` |
@@ -59,6 +61,8 @@ is always `false`.
 | GET | `/notifications/stream?ward=` | `notification:read` |
 | POST | `/notifications/:id/read` | `notification:read` |
 | POST | `/notifications/read-all` | `notification:read` |
+| POST | `/notifications/devices` `{ token, platform }` | `notification:read` |
+| POST | `/notifications/devices/remove` `{ token }` | signed in |
 
 `/stream` is server-sent events. The mobile app polls instead: React Native has
 no `EventSource`, and a six-second poll survives hospital wifi better than a

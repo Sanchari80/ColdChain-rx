@@ -1,77 +1,207 @@
 {
-  "source": "bundled-illustrative",
-  "generatedAt": "2026-09-16T00:00:00.000Z",
-  "note": "Illustrative offline snapshot so the demo runs with no internet. Run `npm run rxnorm:refresh` to replace it with live data pulled from the NIH/NLM RxNav REST API.",
+  "source": "rxnav-live",
+  "generatedAt": "2026-09-17T17:13:35.752Z",
+  "note": "Pulled from https://rxnav.nlm.nih.gov/REST. Regenerate with npm run rxnorm:refresh.",
   "concepts": {
+    "311040": {
+      "rxcui": "311040",
+      "name": "insulin aspart, human 100 UNT/ML Injectable Solution",
+      "tty": "SCD",
+      "doseForm": "Injectable Solution",
+      "strength": [
+        {
+          "ingredient": "insulin aspart, human",
+          "value": 100,
+          "unit": "UNT/ML"
+        }
+      ],
+      "ingredients": [
+        {
+          "rxcui": "51428",
+          "name": "insulin aspart, human"
+        }
+      ],
+      "brands": [
+        "NovoLog"
+      ],
+      "coldChain": {
+        "required": true,
+        "minCelsius": 2,
+        "maxCelsius": 8,
+        "doNotFreeze": true
+      }
+    },
     "311041": {
       "rxcui": "311041",
-      "name": "Insulin Glargine 100 UNT/ML Injectable Solution",
+      "name": "insulin glargine 100 UNT/ML Injectable Solution",
       "tty": "SCD",
       "doseForm": "Injectable Solution",
-      "strength": { "value": 100, "unit": "[iU]/mL" },
-      "ingredients": [{ "rxcui": "274783", "name": "insulin glargine" }],
-      "brands": ["Lantus", "Basaglar"],
-      "coldChain": { "required": true, "minCelsius": 2, "maxCelsius": 8, "doNotFreeze": true }
+      "strength": [
+        {
+          "ingredient": "insulin glargine",
+          "value": 100,
+          "unit": "UNT/ML"
+        }
+      ],
+      "ingredients": [
+        {
+          "rxcui": "274783",
+          "name": "insulin glargine"
+        }
+      ],
+      "brands": [
+        "Lantus"
+      ],
+      "coldChain": {
+        "required": true,
+        "minCelsius": 2,
+        "maxCelsius": 8,
+        "doNotFreeze": true
+      }
     },
-    "1605101": {
-      "rxcui": "1605101",
-      "name": "Insulin Glargine 300 UNT/ML Injectable Solution",
-      "tty": "SCD",
-      "doseForm": "Injectable Solution",
-      "strength": { "value": 300, "unit": "[iU]/mL" },
-      "ingredients": [{ "rxcui": "274783", "name": "insulin glargine" }],
-      "brands": ["Toujeo"],
-      "coldChain": { "required": true, "minCelsius": 2, "maxCelsius": 8, "doNotFreeze": true }
-    },
-    "847232": {
-      "rxcui": "847232",
-      "name": "Insulin Glargine 100 UNT/ML Pen Injector",
-      "tty": "SCD",
-      "doseForm": "Pen Injector",
-      "strength": { "value": 100, "unit": "[iU]/mL" },
-      "ingredients": [{ "rxcui": "274783", "name": "insulin glargine" }],
-      "brands": ["Lantus SoloStar"],
-      "coldChain": { "required": true, "minCelsius": 2, "maxCelsius": 8, "doNotFreeze": true }
-    },
-    "727578": {
-      "rxcui": "727578",
-      "name": "Filgrastim 300 MCG/0.5ML Injection",
-      "tty": "SCD",
-      "doseForm": "Injection",
-      "strength": { "value": 300, "unit": "ug/0.5mL" },
-      "ingredients": [{ "rxcui": "68442", "name": "filgrastim" }],
-      "brands": ["Neupogen"],
-      "coldChain": { "required": true, "minCelsius": 2, "maxCelsius": 8, "doNotFreeze": true }
-    },
-    "1546063": {
-      "rxcui": "1546063",
-      "name": "Adalimumab 40 MG/0.8ML Prefilled Syringe",
-      "tty": "SCD",
-      "doseForm": "Prefilled Syringe",
-      "strength": { "value": 40, "unit": "mg/0.8mL" },
-      "ingredients": [{ "rxcui": "327361", "name": "adalimumab" }],
-      "brands": ["Humira"],
-      "coldChain": { "required": true, "minCelsius": 2, "maxCelsius": 8, "doNotFreeze": true }
-    },
-    "1670007": {
-      "rxcui": "1670007",
-      "name": "Insulin Aspart 100 UNT/ML Injectable Solution",
-      "tty": "SCD",
-      "doseForm": "Injectable Solution",
-      "strength": { "value": 100, "unit": "[iU]/mL" },
-      "ingredients": [{ "rxcui": "51428", "name": "insulin aspart" }],
-      "brands": ["NovoLog"],
-      "coldChain": { "required": true, "minCelsius": 2, "maxCelsius": 8, "doNotFreeze": true }
-    },
-    "1049502": {
-      "rxcui": "1049502",
-      "name": "Acetaminophen 325 MG Oral Tablet",
+    "313782": {
+      "rxcui": "313782",
+      "name": "acetaminophen 325 MG Oral Tablet",
       "tty": "SCD",
       "doseForm": "Oral Tablet",
-      "strength": { "value": 325, "unit": "mg" },
-      "ingredients": [{ "rxcui": "161", "name": "acetaminophen" }],
-      "brands": ["Tylenol"],
-      "coldChain": { "required": false }
+      "strength": [
+        {
+          "ingredient": "acetaminophen",
+          "value": 325,
+          "unit": "MG"
+        }
+      ],
+      "ingredients": [
+        {
+          "rxcui": "161",
+          "name": "acetaminophen"
+        }
+      ],
+      "brands": [
+        "Ringl",
+        "Pharbetol",
+        "Cetafen",
+        "Tylenol",
+        "Mapap",
+        "Tycolene",
+        "Tactinal"
+      ],
+      "coldChain": {
+        "required": false
+      }
+    },
+    "727535": {
+      "rxcui": "727535",
+      "name": "0.5 ML filgrastim 0.6 MG/ML Prefilled Syringe",
+      "tty": "SCD",
+      "doseForm": "Prefilled Syringe",
+      "strength": [
+        {
+          "ingredient": "filgrastim",
+          "value": 0.6,
+          "unit": "MG/ML"
+        }
+      ],
+      "ingredients": [
+        {
+          "rxcui": "68442",
+          "name": "filgrastim"
+        }
+      ],
+      "brands": [
+        "Neupogen"
+      ],
+      "coldChain": {
+        "required": true,
+        "minCelsius": 2,
+        "maxCelsius": 8,
+        "doNotFreeze": true
+      }
+    },
+    "727703": {
+      "rxcui": "727703",
+      "name": "0.8 ML adalimumab 50 MG/ML Prefilled Syringe",
+      "tty": "SCD",
+      "doseForm": "Prefilled Syringe",
+      "strength": [
+        {
+          "ingredient": "adalimumab",
+          "value": 50,
+          "unit": "MG/ML"
+        }
+      ],
+      "ingredients": [
+        {
+          "rxcui": "327361",
+          "name": "adalimumab"
+        }
+      ],
+      "brands": [
+        "Humira"
+      ],
+      "coldChain": {
+        "required": true,
+        "minCelsius": 2,
+        "maxCelsius": 8,
+        "doNotFreeze": true
+      }
+    },
+    "847230": {
+      "rxcui": "847230",
+      "name": "3 ML insulin glargine 100 UNT/ML Pen Injector",
+      "tty": "SCD",
+      "doseForm": "Pen Injector",
+      "strength": [
+        {
+          "ingredient": "insulin glargine",
+          "value": 100,
+          "unit": "UNT/ML"
+        }
+      ],
+      "ingredients": [
+        {
+          "rxcui": "274783",
+          "name": "insulin glargine"
+        }
+      ],
+      "brands": [
+        "Basaglar",
+        "Lantus"
+      ],
+      "coldChain": {
+        "required": true,
+        "minCelsius": 2,
+        "maxCelsius": 8,
+        "doNotFreeze": true
+      }
+    },
+    "2002419": {
+      "rxcui": "2002419",
+      "name": "3 ML insulin glargine 300 UNT/ML Pen Injector",
+      "tty": "SCD",
+      "doseForm": "Pen Injector",
+      "strength": [
+        {
+          "ingredient": "insulin glargine",
+          "value": 300,
+          "unit": "UNT/ML"
+        }
+      ],
+      "ingredients": [
+        {
+          "rxcui": "274783",
+          "name": "insulin glargine"
+        }
+      ],
+      "brands": [
+        "Toujeo"
+      ],
+      "coldChain": {
+        "required": true,
+        "minCelsius": 2,
+        "maxCelsius": 8,
+        "doNotFreeze": true
+      }
     }
   }
 }

@@ -182,6 +182,15 @@ export function DataProvider({ children }) {
     setAccountStatus: (id, status) => client.post(`/directory/${id}/status`, { status }),
     reissuePin: (id) => client.post(`/directory/${id}/pin-reset`),
     loadTelemetry: (id) => client.get(`/coldchain/${id}`),
+    loadOrderable: () => client.get('/indents/orderable'),
+    requestMedication: async (body) => {
+      const result = await client.post('/indents/requests', body);
+      // The alert this raises is not news to the nurse who sent it.
+      ownActions.current.set(result.indent.id, Date.now() + 30000);
+      await refresh({ quiet: true });
+      refreshAudit();
+      return result;
+    },
     markAlertsRead: async () => {
       try {
         await client.post('/notifications/read-all');

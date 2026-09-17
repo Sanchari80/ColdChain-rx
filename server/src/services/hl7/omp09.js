@@ -202,7 +202,10 @@ function parse(raw) {
     observedAt: parseHl7DateTime(segmentGet(segment, 'OBX.14.1') || segmentGet(segment, 'OBX.14')),
   }));
 
-  return { header, patient, visit, order, items, notes, observations, raw: normalized };
+  // Segment names in message order, as the library read them.
+  const segments = message.getSegments().map((entry) => entry.type);
+
+  return { header, patient, visit, order, items, notes, observations, segments, raw: normalized };
 }
 
 /**

@@ -22,6 +22,7 @@ const { badRequest, conflict, forbidden, notFound, unauthorized } = require('../
 const ROLE_SCOPES = {
   nurse: [
     'indent:read',
+    'indent:request',
     'indent:receive',
     'notification:read',
     'audit:read',

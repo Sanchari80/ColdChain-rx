@@ -28,6 +28,13 @@ const deliverSchema = z.object({
   }).optional(),
 });
 
+const wardRequestSchema = z.object({
+  prescriptionId: z.string().trim().min(1).max(64),
+  doses: z.number().int().min(1).max(10).default(1),
+  priority: z.enum(['routine', 'urgent']).default('routine'),
+  note: z.string().trim().max(140).optional(),
+});
+
 const cancelSchema = z.object({
   reason: z.string().trim().min(4).max(280),
 });
@@ -54,6 +61,21 @@ router.get('/', authenticate, requireScope('indent:read'), validate(listQuery, '
 router.get('/couriers', authenticate, requireScope('indent:read'), (req, res) => {
   res.json({ couriers: indentService.couriers() });
 });
+
+/** What this nurse's ward can ask the pharmacy for: refrigerated products on active prescriptions. */
+router.get('/orderable', authenticate, requireScope('indent:request'), asyncHandler(async (req, res) => {
+  const items = await indentService.orderableFor({ ward: req.actor.ward || undefined });
+  res.json({ items, ward: req.actor.ward || null });
+}));
+
+/**
+ * A nurse asks the pharmacy for a product. The server writes it as an HL7 v2
+ * OMP^O09 from the chart and puts it through the same parser as any inbound order.
+ */
+router.post('/requests', authenticate, requireScope('indent:request'), validate(wardRequestSchema), asyncHandler(async (req, res) => {
+  const { indent, hl7 } = await indentService.requestFromWard(req.body, req.actor, req.ip);
+  res.status(201).json({ indent: indentService.publicView(indent), hl7 });
+}));
 
 router.get('/:id', authenticate, requireScope('indent:read'), (req, res) => {
   res.json({ indent: indentService.get(req.params.id) });

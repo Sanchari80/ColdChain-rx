@@ -46,10 +46,10 @@ test('accepts both CR and CRLF segment terminators', () => {
 
 test('handles repeating RXO segments', () => {
   const base = samples.valid().split('\r');
-  const extra = 'RXO|1049502^Acetaminophen 325 MG Oral Tablet^RXNORM|325|325|mg^milligram^UCUM|TAB^Tablet^HL70162';
+  const extra = 'RXO|313782^Acetaminophen 325 MG Oral Tablet^RXNORM|325|325|mg^milligram^UCUM|TAB^Tablet^HL70162';
   const parsed = hl7.parse([...base, extra].join('\r'));
   assert.equal(parsed.items.length, 2);
-  assert.equal(parsed.items[1].code, '1049502');
+  assert.equal(parsed.items[1].code, '313782');
 });
 
 test('preserves escaped delimiters inside a drug name', () => {

@@ -25,20 +25,43 @@ Open it in any browser, on a phone or a computer. Nothing to install.
 
 Staff IDs are not case-sensitive. Tap **Show** in the PIN field to check what you typed.
 
-## Try it in two minutes
+## Try it in three minutes
 
-1. Sign in as the **pharmacist**.
-2. Open **IND-2026-0092** and tap **Check against the prescription**. It is blocked:
-   the ward asked for a different strength than the doctor prescribed.
-3. Open **IND-2026-0091**, check it, pick a courier and tap **Pack and dispatch**.
-4. On a second device, or in a private browser window, sign in as the **nurse** `NUR9931`
-   and allow notifications. Dispatch from the pharmacist and the nurse gets an alert
-   with the courier, the arrival time and the live temperature, but no patient details.
-5. Open **IND-2026-0094**. It is on the way and its temperature has gone out of range.
-6. Open the **Audit** tab to see every action recorded.
+Use two browser windows, for example a normal window and a private one, or a phone and a computer.
+
+1. **Window 1: sign in as the nurse** `NUR9931` and allow notifications. Tap **Request medication**,
+   choose **Filgrastim** and tap **Send to pharmacy**. The screen shows the request went out as an
+   **HL7 v2 OMP^O09** message and came back acknowledged (`ACK AA`).
+2. **Window 2: sign in as the pharmacist** `PHARM2201`. The new request is on the list as
+   *Awaiting check*. Open it, tap **Check against the prescription** (it passes), pick a courier and
+   tap **Pack and dispatch**.
+3. **Back in window 1:** the nurse gets a notification with the courier and the arrival time.
+   It has no patient name, record number, date of birth or phone number.
+4. **As the pharmacist, open IND-2026-0092** and check it. It is blocked: the ward asked for insulin
+   glargine **300** units/mL, but the doctor prescribed **100** units/mL.
+5. **Open IND-2026-0094.** It is on the way, and its temperature has gone out of range.
+6. **Open the Audit tab** to see every action recorded, with a live tamper check at the top.
 
 Everyone using the demo shares the same data. It goes back to the starting state
 whenever the server restarts.
+
+## How it meets Case 1
+
+| Requirement | Standard used | Where in the code | Tests |
+| --- | --- | --- | --- |
+| Nurse submits a request | HL7 v2.5.1 `OMP^O09`, built from the chart | [indentService.js](server/src/services/indents/indentService.js) (`requestFromWard`), [RequestScreen.js](mobile/src/screens/RequestScreen.js) | [request.test.js](server/tests/request.test.js) |
+| Read the prescription | HL7 FHIR R4 `MedicationRequest` | [fhirClient.js](server/src/services/fhir/fhirClient.js), [indentService.js](server/src/services/indents/indentService.js) (`verify`) | [api.test.js](server/tests/api.test.js) |
+| Validate the drug | RxNorm via NLM RxNav, compared by RxCUI, ingredient, strength and dose form | [rxnormClient.js](server/src/services/rxnorm/rxnormClient.js), [strength.js](server/src/services/rxnorm/strength.js), [refresh-rxnorm.js](server/scripts/refresh-rxnorm.js) | [rxnorm.test.js](server/tests/rxnorm.test.js) |
+| Parse the legacy order | HL7 v2 `OMP^O09` with the Redox `hl7-standard` parser | [omp09.js](server/src/services/hl7/omp09.js) | [hl7.test.js](server/tests/hl7.test.js) |
+| Update the chart | HL7 FHIR R4 `MedicationDispense` with courier and ETA, plus `Provenance` | [resources.js](server/src/services/fhir/resources.js) | [api.test.js](server/tests/api.test.js) |
+| Notify the nurse's phone | Push notifications through Expo and Firebase Cloud Messaging | [push.js](server/src/services/notifications/push.js), [notifications.js](mobile/src/utils/notifications.js) | [push.test.js](server/tests/push.test.js) |
+| No PHI in the alert | HIPAA Safe Harbor: allow-list plus a runtime check that blocks any leak | [deidentify.js](server/src/services/phi/deidentify.js) | [phi.test.js](server/tests/phi.test.js) |
+| Tamper-proof audit trail | HL7 FHIR R4 `AuditEvent` with a SHA-256 hash chain | [auditService.js](server/src/services/audit/auditService.js) | [audit.test.js](server/tests/audit.test.js) |
+
+The live demo runs the same code against a built-in FHIR store and an RxNorm formulary pulled from
+RxNav, so it stays stable for reviewers. The drug codes are real RxCUIs. Setting `DATA_MODE=live`
+points the same code at a FHIR server such as `hapi.fhir.org` and calls RxNav directly.
+[docs/STANDARDS.md](docs/STANDARDS.md) explains each part in more detail.
 
 ## Built with
 

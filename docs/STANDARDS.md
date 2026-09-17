@@ -33,10 +33,12 @@ There is no `name.includes('Insulin')` anywhere in this repository. `Lantus` and
 `Insulin Glargine 100 UNT/ML Injectable Solution` resolve to the same concept,
 which no amount of string matching would tell you.
 
-In `DATA_MODE=mock` this runs against a bundled snapshot so the demo works with
-no internet. The snapshot ships marked `bundled-illustrative` and the app shows
-a warning badge while that is true; `npm run rxnorm:refresh` replaces it with
-live NLM data.
+In `DATA_MODE=live` every lookup goes to the NLM RxNav REST API. In
+`DATA_MODE=mock` the same code reads `snapshot.json`, which holds real RxNorm
+concepts pulled from RxNav by `npm run rxnorm:refresh`: real RxCUIs, ingredients,
+dose forms and brand names. Strength comes from each product's SCDC components
+(`insulin glargine 300 UNT/ML`), not from its display name. Settings shows which
+source is in use and when the snapshot was pulled.
 
 ## 3. Parse the legacy message — HL7 v2.5.1 OMP^O09
 
@@ -50,6 +52,14 @@ drug name rather than failing.
 
 The parser rejects a message that is not OMP^O09, one with no ORC, one with no
 RXO, and one with no MSH-10, and it answers every message with an ACK^O09.
+
+A nurse's request from the app takes the same road. `requestFromWard` in
+`services/indents/indentService.js` reads the prescription, patient and
+encounter from FHIR, writes an OMP^O09 (free text escaped with `F`, `S`,
+`T`, `R`, `E`), and passes it to the same parser and the same
+`upsertFromHl7` as a message from the interface engine. The ward device gets
+back the segment list and the ACK, never the message, so the PID it carried
+stays on the server.
 
 ## 4. Update the chart — FHIR R4 MedicationDispense
 

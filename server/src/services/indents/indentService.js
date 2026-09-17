@@ -6,7 +6,7 @@ const fhir = require('../fhir/fhirClient');
 const { buildMedicationDispense, buildProvenance, OUTCOME } = require('../fhir/resources');
 const rxnorm = require('../rxnorm/rxnormClient');
 const hl7 = require('../hl7/omp09');
-const { samples } = require('../hl7/samples');
+const { samples, ompO09, escapeText } = require('../hl7/samples');
 const phi = require('../phi/deidentify');
 const coldChain = require('../coldchain/monitor');
 const notifications = require('../notifications/store');
@@ -165,7 +165,7 @@ async function upsertFromHl7(parsed, actor, sourceIp) {
     hl7: {
       messageControlId: parsed.header.messageControlId,
       receivedAt: new Date().toISOString(),
-      segments: parsed.raw.split('\r').map((line) => line.split('|')[0]),
+      segments: parsed.segments,
     },
     // PHI extracted from PID stays server-side and is never returned by the API.
     _phi: parsed.patient,
@@ -541,6 +541,192 @@ async function publishAlert(indent, { status, severity, courier, etaIso, telemet
   return published;
 }
 
+// --- Ward requests ---------------------------------------------------------
+//
+// A nurse asks the pharmacy for a refrigerated product from the app. The request
+// travels the way a ward order system would send it: as an HL7 v2 OMP^O09,
+// built from the chart, parsed by the same library as any other inbound order,
+// and turned into an indent by the same code. Nothing about a request from the
+// app is trusted more than a message from the interface engine.
+
+const ROUTE_CODES = { 34206005: 'SC', 47625008: 'IV', 78421000: 'IM', 26643006: 'PO' };
+const DOSE_FORM_CODES = { 'Injectable Solution': 'SOLN', 'Prefilled Syringe': 'SYR', 'Pen Injector': 'PEN', 'Oral Tablet': 'TAB' };
+const UNIT_NAMES = { '[iU]': 'International Unit', ug: 'microgram', mg: 'milligram', mL: 'milliliter' };
+
+/** Ward, room and bed from an inpatient encounter's current location. */
+function bedOf(encounter) {
+  const display = encounter?.location?.[0]?.location?.display || '';
+  const match = /^(\S+)\s*\/\s*Bed\s+(\w+)-(\w+)$/.exec(display);
+  return match ? { ward: match[1], room: match[2], bed: match[3] } : null;
+}
+
+function rxnormCodingOf(request) {
+  return (request?.medicationCodeableConcept?.coding || []).find((coding) => /rxnorm/i.test(coding.system || '')) || null;
+}
+
+function hl7Timestamp(date) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}`
+    + `${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}+0000`;
+}
+
+/** "Q24H" from a FHIR timing of once every day, and so on. */
+function intervalOf(timing) {
+  const repeat = timing?.repeat;
+  if (!repeat || !repeat.frequency || !repeat.period) return '';
+  const hoursPerUnit = { h: 1, d: 24, wk: 168 }[repeat.periodUnit];
+  if (!hoursPerUnit) return '';
+  const hours = (repeat.period * hoursPerUnit) / repeat.frequency;
+  return Number.isInteger(hours) ? `Q${hours}H` : '';
+}
+
+function nextIndentId(now) {
+  const prefix = `IND-${now.getUTCFullYear()}-`;
+  let highest = 0;
+  for (const id of indents.keys()) {
+    if (id.startsWith(prefix)) highest = Math.max(highest, Number.parseInt(id.slice(prefix.length), 10) || 0);
+  }
+  return `${prefix}${String(highest + 1).padStart(4, '0')}`;
+}
+
+/**
+ * The refrigerated products a ward can ask for right now: every active
+ * prescription for a patient currently in a bed on that ward.
+ */
+async function orderableFor({ ward }) {
+  const encounters = await fhir.search('Encounter', { status: 'in-progress' });
+  const results = [];
+
+  for (const encounter of encounters) {
+    const place = bedOf(encounter);
+    if (!place || (ward && place.ward !== ward)) continue;
+    const patientId = referenceIdOf(encounter.subject);
+    const requests = await fhir.activeMedicationRequestsFor(patientId);
+
+    for (const request of requests) {
+      const coding = rxnormCodingOf(request);
+      if (!coding || !rxnorm.coldChainFor(coding.code).required) continue;
+      const open = [...indents.values()].find((indent) => (
+        indent.prescriptionId === request.id && ![STATUS.DELIVERED, STATUS.CANCELLED].includes(indent.status)
+      ));
+      results.push({
+        prescriptionId: request.id,
+        ward: place.ward,
+        room: place.room,
+        bed: place.bed,
+        bedLabel: `${place.ward} / ${place.room}-${place.bed}`,
+        subjectToken: phi.pseudonym(patientId),
+        drug: { rxcui: coding.code, display: coding.display || request.medicationCodeableConcept.text },
+        instructions: doseSummaryOf(request),
+        openIndent: open ? { id: open.id, status: open.status } : null,
+      });
+    }
+  }
+
+  return results.sort((a, b) => a.bedLabel.localeCompare(b.bedLabel));
+}
+
+async function requestFromWard({ prescriptionId, doses = 1, priority = 'routine', note }, actor, sourceIp) {
+  const request = await fhir.readOrThrow('MedicationRequest', prescriptionId);
+  if (request.status !== 'active') {
+    throw conflict(`This prescription is ${request.status}. Ask the prescriber to review it before requesting the product.`);
+  }
+  const coding = rxnormCodingOf(request);
+  if (!coding) throw conflict('This prescription carries no RxNorm code, so the pharmacy cannot check it.');
+
+  const encounter = await fhir.read('Encounter', referenceIdOf(request.encounter));
+  const place = bedOf(encounter);
+  if (!place) throw conflict('The patient on this prescription is not in a bed on an inpatient ward.');
+  if (actor.ward && place.ward !== actor.ward) {
+    throw forbidden(`You can request medication for ${actor.ward} only.`);
+  }
+
+  const patientId = referenceIdOf(request.subject);
+  const patient = await fhir.readOrThrow('Patient', patientId);
+  const prescriber = await fhir.read('Practitioner', referenceIdOf(request.requester));
+  const concept = await rxnorm.getConcept(coding.code);
+  const dosage = request.dosageInstruction?.[0];
+  const dose = dosage?.doseAndRate?.[0]?.doseQuantity || {};
+  const route = dosage?.route?.coding?.[0];
+  const name = patient.name?.[0] || {};
+  const address = patient.address?.[0] || {};
+  const esc = escapeText;
+
+  const now = new Date();
+  const stamp = hl7Timestamp(now);
+  const indentId = nextIndentId(now);
+  const [actorGiven, ...actorRest] = String(actor.name || '').split(' ');
+
+  const message = ompO09({
+    stamp,
+    controlId: `WARD${now.getTime()}`,
+    indentId,
+    fillerId: indentId.replace(/^IND/, 'PH'),
+    mrn: esc(patient.identifier?.[0]?.value),
+    family: esc(name.family),
+    given: esc(name.given?.[0]),
+    middle: esc(name.given?.[1]),
+    birthDate: String(patient.birthDate || '').replace(/-/g, ''),
+    sex: { female: 'F', male: 'M' }[patient.gender] || 'U',
+    phone: esc((patient.telecom || []).find((entry) => entry.system === 'phone')?.value),
+    address: [esc((address.line || []).join(' ')), '', esc(address.city), '', esc(address.postalCode), esc(address.country)].join('^'),
+    ward: place.ward,
+    room: place.room,
+    bed: place.bed,
+    visitNumber: esc(encounter.id),
+    rxcui: coding.code,
+    drugName: esc(coding.display),
+    doseValue: dose.value ?? '',
+    doseUnit: esc(dose.code || dose.unit),
+    doseUnitText: esc(UNIT_NAMES[dose.code] || dose.unit),
+    doseForm: DOSE_FORM_CODES[concept?.doseForm] || 'OTH',
+    doseFormText: esc(concept?.doseForm || ''),
+    routeCode: ROUTE_CODES[route?.code] || 'OTH',
+    routeText: esc(route?.display || ''),
+    dispenseQty: doses,
+    orderingProvider: prescriber
+      ? `${esc(prescriber.id)}^${esc(prescriber.name?.[0]?.family)}^${esc(prescriber.name?.[0]?.given?.[0])}`
+      : '',
+    enteredBy: `${esc(actor.id)}^${esc(actorRest.join(' '))}^${esc(actorGiven)}`,
+    interval: intervalOf(dosage?.timing),
+    startAt: stamp,
+    priority: priority === 'urgent' ? 'S' : 'R',
+    notes: [
+      'COLD CHAIN 2-8 C. DO NOT FREEZE.',
+      note ? esc(`Ward note: ${note}`) : null,
+    ].filter(Boolean),
+    includeObx: false,
+  });
+
+  const parsed = hl7.parse(message);
+  const indent = await upsertFromHl7(parsed, actor, sourceIp);
+  indent.prescriptionId = request.id;
+  indent.requestChannel = 'ward-app';
+
+  await publishAlert(indent, {
+    status: 'requested',
+    severity: 'info',
+    courier: { id: '-', name: 'Not yet assigned', role: 'Pharmacy queue' },
+    etaIso: null,
+    telemetry: { minCelsius: indent.coldChainSpec.minCelsius, maxCelsius: indent.coldChainSpec.maxCelsius },
+    actor,
+  });
+
+  return {
+    indent,
+    // What the ward device may see of the message: its shape and the ACK, never
+    // the PID segment it carried.
+    hl7: {
+      messageType: parsed.header.messageType,
+      version: parsed.header.versionId,
+      messageControlId: parsed.header.messageControlId,
+      segments: parsed.segments,
+      ack: hl7.buildAck(parsed.header, { accepted: true }),
+      acknowledgementCode: 'AA',
+    },
+  };
+}
+
 function list({ ward, status } = {}) {
   let results = [...indents.values()];
   if (ward) results = results.filter((indent) => indent.ward === ward);
@@ -636,6 +822,8 @@ module.exports = {
   markDelivered,
   cancel,
   upsertFromHl7,
+  orderableFor,
+  requestFromWard,
   publicView,
   reset,
   restoreBaseline,

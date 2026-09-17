@@ -1,7 +1,11 @@
 'use strict';
 
 /**
- * Sample OMP^O09 messages used by the demo endpoint and the test suite.
+ * OMP^O09 message construction.
+ *
+ * `ompO09` builds the order message a ward sends to pharmacy. The ward request
+ * screen uses it for real requests; the samples below use it for the interface
+ * console and the test suite.
  *
  * Segments are assembled from a sparse {fieldIndex: value} map rather than
  * typed out as pipe-delimited strings, so a field can never silently land in
@@ -31,6 +35,20 @@ function msh(fields) {
   return parts.join('|');
 }
 
+/**
+ * Escapes free text for an HL7 v2 field, so a "|" or "^" typed by a person is
+ * carried as data instead of splitting the field.
+ */
+function escapeText(value) {
+  return String(value === undefined || value === null ? '' : value)
+    .replace(/\\/g, '\\E\\')
+    .replace(/\|/g, '\\F\\')
+    .replace(/\^/g, '\\S\\')
+    .replace(/&/g, '\\T\\')
+    .replace(/~/g, '\\R\\')
+    .replace(/[\r\n]+/g, ' ');
+}
+
 function build(segments) {
   return segments.filter(Boolean).join('\r');
 }
@@ -38,6 +56,7 @@ function build(segments) {
 const STAMP = '20260916101500';
 
 function ompO09({
+  stamp = STAMP,
   controlId = 'MSG00012',
   indentId = 'IND-2026-0091',
   fillerId = 'PH-2026-0091',
@@ -48,6 +67,7 @@ function ompO09({
   birthDate = '19780412',
   sex = 'F',
   phone = '+8801711000001',
+  address = '12 Gulshan Avenue^^Dhaka^^1212^BD',
   ward = 'IPD-7B',
   room = '712',
   bed = 'A',
@@ -72,11 +92,12 @@ function ompO09({
   messageType = 'OMP^O09',
   includeOrc = true,
   includeRxo = true,
+  includeObx = true,
 } = {}) {
   return build([
     msh({
       3: 'PHARMSYS', 4: 'MAINPHARM', 5: 'COLDCHAIN', 6: ward,
-      7: STAMP, 9: messageType, 10: controlId, 11: 'P', 12: '2.5.1',
+      7: stamp, 9: messageType, 10: controlId, 11: 'P', 12: '2.5.1',
     }),
     segment('PID', {
       1: '1',
@@ -84,7 +105,7 @@ function ompO09({
       5: `${family}^${given}^${middle}`,
       7: birthDate,
       8: sex,
-      11: '12 Gulshan Avenue^^Dhaka^^1212^BD',
+      11: address,
       13: phone,
     }),
     segment('PV1', {
@@ -101,7 +122,7 @@ function ompO09({
         3: fillerId,
         5: 'IP',
         7: `^${interval}^^${startAt}^^${priority}`,
-        9: STAMP,
+        9: stamp,
         10: enteredBy,
         12: orderingProvider,
       })
@@ -121,15 +142,15 @@ function ompO09({
       })
       : null,
     segment('RXR', { 1: `${routeCode}^${routeText}^HL70162` }),
-    segment('OBX', {
+    includeObx ? segment('OBX', {
       1: '1',
       2: 'NM',
       3: '8329-5^Body temperature of storage unit^LN',
       5: fridgeTempC,
       6: 'Cel^degree Celsius^UCUM',
       11: 'F',
-      14: STAMP,
-    }),
+      14: stamp,
+    }) : null,
     ...notes.map((text, index) => segment('NTE', { 1: String(index + 1), 2: 'L', 3: text })),
   ]);
 }
@@ -142,9 +163,11 @@ const samples = {
   wrongStrength: () => ompO09({
     controlId: 'MSG00013',
     indentId: 'IND-2026-0092',
-    rxcui: '1605101',
-    drugName: 'Insulin Glargine 300 UNT/ML Injectable Solution',
+    rxcui: '2002419',
+    drugName: 'Insulin Glargine 300 UNT/ML, 3 ML Pen Injector',
     doseValue: 18,
+    doseForm: 'PEN',
+    doseFormText: 'Pen Injector',
   }),
 
   /** A drug with a completely different active ingredient to the order. */
@@ -161,7 +184,7 @@ const samples = {
     room: '903',
     bed: 'B',
     visitNumber: 'VN0100',
-    rxcui: '1670007',
+    rxcui: '311040',
     drugName: 'Insulin Aspart 100 UNT/ML Injectable Solution',
   }),
 
@@ -179,13 +202,13 @@ const samples = {
     room: '714',
     bed: 'C',
     visitNumber: 'VN0099',
-    rxcui: '727578',
-    drugName: 'Filgrastim 300 MCG/0.5ML Injection',
+    rxcui: '727535',
+    drugName: 'Filgrastim 0.6 MG/ML, 0.5 ML Prefilled Syringe',
     doseValue: 300,
     doseUnit: 'ug',
     doseUnitText: 'microgram',
-    doseForm: 'INJ',
-    doseFormText: 'Injection',
+    doseForm: 'SYR',
+    doseFormText: 'Prefilled Syringe',
     fridgeTempC: '11.4',
     notes: ['COLD CHAIN 2-8 C. PROBE ALARM RAISED IN TRANSIT.'],
   }),
@@ -197,4 +220,4 @@ const samples = {
   missingOrc: () => ompO09({ controlId: 'MSG00017', includeOrc: false }),
 };
 
-module.exports = { samples, ompO09, segment, msh, build };
+module.exports = { samples, ompO09, segment, msh, build, escapeText };

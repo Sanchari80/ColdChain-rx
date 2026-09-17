@@ -88,6 +88,8 @@ export function describeAlert(alert) {
         body: [place, courier ? `with ${courier}` : null, alert.coldChain && alert.coldChain.breached ? `out of range ${temp}` : temp]
           .filter(Boolean).join(' · '),
       };
+    case 'requested':
+      return { title: `Requested: ${alert.drug}`, body: [place, 'Waiting for the pharmacist'].filter(Boolean).join(' · ') };
     case 'blocked':
       return { title: `Blocked: ${alert.drug}`, body: [place, 'Stopped at the pharmacy safety check'].filter(Boolean).join(' · ') };
     case 'delivered-quarantine':

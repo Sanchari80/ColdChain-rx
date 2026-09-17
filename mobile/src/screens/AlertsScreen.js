@@ -74,7 +74,9 @@ export function AlertsScreen() {
                   </View>
                 ) : (
                   <T variant="label" tone="dim">
-                    {alert.status === 'blocked'
+                    {alert.status === 'requested'
+                      ? 'Requested by the ward, waiting for the pharmacist'
+                      : alert.status === 'blocked'
                       ? 'Blocked at the pharmacy safety check'
                       : alert.status === 'delivered-quarantine'
                         ? 'Delivered, but quarantined after a temperature excursion'

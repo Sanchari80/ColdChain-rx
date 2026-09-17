@@ -257,7 +257,10 @@ export function SettingsScreen() {
           <Row label="Facility" value={capabilities.facility.name} />
           <Row label="Clinical record" value={capabilities.clinicalRecord.source} />
           <Row label="Record standard" value={capabilities.clinicalRecord.release} />
-          <Row label="Formulary" value="RxNorm" />
+          <Row label="Formulary" value={capabilities.formulary.source} />
+          {capabilities.formulary.updated ? (
+            <Row label="Formulary pulled" value={new Date(capabilities.formulary.updated).toLocaleDateString()} />
+          ) : null}
           <Row label="Products held" value={String(capabilities.formulary.productCount ?? '--')} />
           <Row label="Cold-chain window" value={`${capabilities.coldChain.minCelsius}° to ${capabilities.coldChain.maxCelsius}°C`} />
           <Row label="Version" value={capabilities.version} />

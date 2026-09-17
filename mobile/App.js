@@ -9,6 +9,7 @@ import { HospitalFloor } from './src/components/HospitalFloor';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { IndentsScreen } from './src/screens/IndentsScreen';
 import { IndentDetailScreen } from './src/screens/IndentDetailScreen';
+import { RequestScreen } from './src/screens/RequestScreen';
 import { AlertsScreen } from './src/screens/AlertsScreen';
 import { AuditScreen } from './src/screens/AuditScreen';
 import { DirectoryScreen } from './src/screens/DirectoryScreen';
@@ -24,6 +25,7 @@ const TABS = {
 
 const DETAIL = {
   indent: IndentDetailScreen,
+  request: RequestScreen,
 };
 
 function Shell() {
