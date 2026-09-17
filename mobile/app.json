@@ -19,7 +19,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "org.example.coldchainrx",
+      "bundleIdentifier": "com.coldchainrx.app",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
@@ -27,7 +27,7 @@
       }
     },
     "android": {
-      "package": "org.example.coldchainrx",
+      "package": "com.coldchainrx.app",
       "usesCleartextTraffic": true,
       "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
@@ -35,7 +35,11 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "versionCode": 1,
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -46,8 +50,20 @@
       "apiPort": 4000
     },
     "plugins": [
-      "expo-audio",
-      ["expo-notifications", { "color": "#19D3A2" }]
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#19D3A2"
+        }
+      ]
     ]
   }
 }

@@ -10,8 +10,8 @@ on the way.
 
 Open it in any browser, on a phone or a computer. Nothing to install.
 
-> The demo runs on a free server that sleeps when nobody is using it. The first
-> visit can take up to a minute to load. After that it is fast.
+> The demo runs on a free server. If it has been idle, the first visit can take
+> up to a minute to load. After that it is fast.
 
 ## Sign in
 

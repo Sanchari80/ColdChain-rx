@@ -36,20 +36,29 @@ export function AuthProvider({ children }) {
   }), [baseUrl]);
 
   /** What this facility allows, read before anyone has signed in. */
+  // A hosted server that has been idle can take close to a minute to wake, so
+  // the first contact waits that long and tries again before reporting a fault.
   const loadAccess = useCallback(async () => {
     setLoadingAccess(true);
-    try {
-      const result = await client.get('/auth/methods');
-      setAccess(result);
-      setAccessError(null);
-      return result;
-    } catch (err) {
-      setAccess(null);
-      setAccessError(err.message);
-      return null;
-    } finally {
-      setLoadingAccess(false);
+    setAccessError(null);
+    let lastError = null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const result = await client.get('/auth/methods', { timeoutMs: 60000 });
+        setAccess(result);
+        setAccessError(null);
+        setLoadingAccess(false);
+        return result;
+      } catch (err) {
+        lastError = err;
+        if (err.status) break; // The server answered; waiting will not change it.
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+      }
     }
+    setAccess(null);
+    setAccessError(lastError ? lastError.message : 'Cannot reach the server.');
+    setLoadingAccess(false);
+    return null;
   }, [client]);
 
   useEffect(() => {
@@ -60,7 +69,11 @@ export function AuthProvider({ children }) {
     setSigningIn(true);
     setError(null);
     try {
-      const result = await client.post('/auth/login', { staffId: String(staffId).trim(), pin: String(pin).trim() });
+      const result = await client.post(
+        '/auth/login',
+        { staffId: String(staffId).trim(), pin: String(pin).trim() },
+        { timeoutMs: 60000 },
+      );
       tokenRef.current = result.token;
       setUser(result.user);
       return result.user;

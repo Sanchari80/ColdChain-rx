@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Animated, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeProvider';
 import { useAuth } from '../state/AuthContext';
@@ -74,7 +74,7 @@ export function LoginScreen() {
   const arrival = useArrival();
   const {
     signIn, signingIn, error, clearError, baseUrl, setBaseUrl,
-    access, accessError, loadAccess, startSingleSignOn,
+    access, accessError, loadingAccess, loadAccess, startSingleSignOn,
   } = useAuth();
 
   const [staffId, setStaffId] = useState('');
@@ -156,6 +156,13 @@ export function LoginScreen() {
             {error ? <Banner tone="danger" title="Cannot sign in" message={error} /> : null}
 
             <MedButton label="Sign in" onPress={submit} busy={signingIn} disabled={!staffId || !pin} full />
+
+            {loadingAccess && !access ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm }}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <T variant="micro" tone="dim" style={{ flexShrink: 1 }}>Connecting to the pharmacy service. This can take up to a minute.</T>
+              </View>
+            ) : null}
 
             {sso && sso.configured ? (
               <>
