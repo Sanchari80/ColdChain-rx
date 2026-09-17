@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "ColdChain Rx",
+    "slug": "coldchain-rx",
+    "version": "1.0.0",
+    "scheme": "coldchainrx",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#071A21",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#071A21"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "org.example.coldchainrx",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
+      }
+    },
+    "android": {
+      "package": "org.example.coldchainrx",
+      "usesCleartextTraffic": true,
+      "edgeToEdgeEnabled": true,
+      "adaptiveIcon": {
+        "backgroundColor": "#071A21",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single"
+    },
+    "extra": {
+      "apiPort": 4000
+    },
+    "plugins": [
+      "expo-audio",
+      ["expo-notifications", { "color": "#19D3A2" }]
+    ]
+  }
+}

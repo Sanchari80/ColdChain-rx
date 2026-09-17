@@ -1,0 +1,19 @@
+# One web service: the pharmacy API plus the web build of the app, on one address.
+services:
+  - type: web
+    name: coldchain-rx
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: cd mobile && npm ci && npx expo export --platform web && cd ../server && npm ci
+    startCommand: cd server && npm start
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: PHI_PSEUDONYM_SALT
+        generateValue: true
