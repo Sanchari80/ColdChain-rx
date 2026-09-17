@@ -40,7 +40,10 @@
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO"
       ],
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -48,7 +51,10 @@
       "output": "single"
     },
     "extra": {
-      "apiPort": 4000
+      "apiPort": 4000,
+      "eas": {
+        "projectId": "9986daf0-350c-4002-9743-916f48d7a191"
+      }
     },
     "plugins": [
       [
@@ -65,6 +71,7 @@
           "color": "#19D3A2"
         }
       ]
-    ]
+    ],
+    "owner": "sktsoftwareland80s-team"
   }
 }
