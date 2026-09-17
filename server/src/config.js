@@ -104,6 +104,13 @@ const config = {
     timeoutMs: int(process.env.SSO_TIMEOUT_MS, 12000),
   },
 
+  push: {
+    // Push alerts to phones through the Expo push service (FCM on Android).
+    enabled: bool(process.env.PUSH_ENABLED, NODE_ENV !== 'test'),
+    // Optional: only needed when "enhanced push security" is on for the Expo project.
+    accessToken: process.env.EXPO_ACCESS_TOKEN || null,
+  },
+
   coldChain: {
     minCelsius: Number(process.env.COLD_MIN_C || 2),
     maxCelsius: Number(process.env.COLD_MAX_C || 8),

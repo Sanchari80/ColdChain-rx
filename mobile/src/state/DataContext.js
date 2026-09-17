@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { useAuth } from './AuthContext';
-import { notifyAlert, prepareNotifications, setBadge } from '../utils/notifications';
+import { getPushToken, notifyAlert, prepareNotifications, setBadge } from '../utils/notifications';
 
 const DataContext = createContext(null);
 
@@ -14,9 +14,9 @@ const REFRESH_MS = 6000;
  * and a six-second poll over a hospital wifi that drops constantly is more
  * predictable than a long-lived connection the OS will kill in the background.
  *
- * Every alert the feed brings in after the first load raises a notification on
- * the device. Polling carries on while the app is in the background for as long
- * as the OS lets it run, so a minimised app still hears about a delivery.
+ * Alerts reach the phone as push notifications once the server has this phone's
+ * push token. Until then (Expo Go, web, a build without Firebase) every alert
+ * the feed brings in after the first load raises a local notification instead.
  */
 export function DataProvider({ children }) {
   const { client, user, can } = useAuth();
@@ -36,6 +36,9 @@ export function DataProvider({ children }) {
   const seeded = useRef(false);
   // Indents this person just acted on, with when to stop keeping quiet about them.
   const ownActions = useRef(new Map());
+  // Once the server can push to this phone, it does the notifying, even with
+  // the app closed. Raising a local notification as well would show each alert twice.
+  const pushActive = useRef(false);
 
   const refresh = useCallback(async ({ quiet = false } = {}) => {
     if (!user || busy.current) return;
@@ -51,7 +54,7 @@ export function DataProvider({ children }) {
       const items = alertResult.items || [];
       const fresh = items.filter((item) => !seenAlerts.current.has(item.id));
       fresh.forEach((item) => seenAlerts.current.add(item.id));
-      if (seeded.current) {
+      if (seeded.current && !pushActive.current) {
         const now = Date.now();
         // Oldest first, so they stack in the order they happened. Alerts this
         // person just caused are not news to them.
@@ -91,6 +94,7 @@ export function DataProvider({ children }) {
     seenAlerts.current = new Set();
     seeded.current = false;
     ownActions.current = new Map();
+    pushActive.current = false;
   }, [userId]);
 
   useEffect(() => {
@@ -101,17 +105,40 @@ export function DataProvider({ children }) {
       setBadge(0);
       return undefined;
     }
-    if (can('notification:read')) prepareNotifications();
+    // Tells the server where to push this person's alerts. Repeated while the app
+    // runs, because a restarted server has forgotten every phone.
+    const registerPush = async () => {
+      try {
+        const token = await getPushToken();
+        if (!token) return;
+        await client.post('/notifications/devices', { token, platform: Platform.OS });
+        pushActive.current = true;
+      } catch {
+        // Local notifications stay on until the server has this phone.
+      }
+    };
+    if (can('notification:read')) {
+      prepareNotifications();
+      registerPush();
+    }
     refresh();
     refreshAudit();
     client.get('/capabilities').then(setCapabilities).catch(() => {});
 
-    const timer = setInterval(() => refresh({ quiet: true }), REFRESH_MS);
+    let ticks = 0;
+    const timer = setInterval(() => {
+      refresh({ quiet: true });
+      ticks += 1;
+      if (ticks % 50 === 0 && can('notification:read')) registerPush();
+    }, REFRESH_MS);
 
     const subscription = AppState.addEventListener('change', (next) => {
       const wasBackground = appState.current !== 'active';
       appState.current = next;
-      if (next === 'active' && wasBackground) refresh({ quiet: true });
+      if (next === 'active' && wasBackground) {
+        refresh({ quiet: true });
+        if (can('notification:read')) registerPush();
+      }
     });
 
     return () => {

@@ -1,14 +1,18 @@
 import { LogBox, Platform } from 'react-native';
+import Constants from 'expo-constants';
+import { isRunningInExpoGo } from 'expo';
 
 /**
  * Ward alerts on the device's own notification shade.
  *
- * These are local notifications raised by the app when the alert feed brings in
- * something new, so they work in Expo Go on Android and iOS without a push
- * service. On web the browser's Notification API is used instead.
+ * In the installed app, alerts arrive as push notifications from the server, so
+ * they reach the phone even when the app is closed. Where push is not available
+ * (Expo Go, web, or before Firebase is set up) the app raises a local
+ * notification itself when its alert feed brings in something new. On web the
+ * browser's Notification API is used.
  */
 
-// Expo Go prints a notice about remote push on import. Remote push is not used.
+// Expo Go prints a notice about remote push on import. Push is never attempted in Expo Go.
 LogBox.ignoreLogs(['`expo-notifications` functionality is not fully supported']);
 
 const isWeb = Platform.OS === 'web';
@@ -123,6 +127,32 @@ export async function notifyAlert(alert) {
   } catch {
     // A notification that cannot be shown must never break the alert feed.
   }
+}
+
+let pushToken = null;
+
+/**
+ * The Expo push token for this install, or null where push cannot work: web,
+ * Expo Go, a build without Firebase, or notifications refused.
+ */
+export async function getPushToken() {
+  if (!Notifications || isRunningInExpoGo()) return null;
+  const projectId = (Constants.expoConfig && Constants.expoConfig.extra && Constants.expoConfig.extra.eas
+    && Constants.expoConfig.extra.eas.projectId) || (Constants.easConfig && Constants.easConfig.projectId);
+  if (!projectId) return null;
+  if (!(await prepareNotifications())) return null;
+  try {
+    const result = await Notifications.getExpoPushTokenAsync({ projectId });
+    pushToken = result.data;
+    return pushToken;
+  } catch {
+    return null;
+  }
+}
+
+/** The token this install registered with, so signing out can withdraw it. */
+export function currentPushToken() {
+  return pushToken;
 }
 
 /** Keeps the app icon badge in step with the unread count. */

@@ -2,9 +2,17 @@
 
 const express = require('express');
 const { authenticate, requireScope } = require('../middleware/auth');
+const { z } = require('zod');
+const validate = require('../middleware/validate');
 const notifications = require('../services/notifications/store');
+const push = require('../services/notifications/push');
 
 const router = express.Router();
+
+const deviceSchema = z.object({
+  token: z.string().trim().max(200).refine(push.isValidToken, 'Not an Expo push token'),
+  platform: z.enum(['android', 'ios']).optional(),
+});
 
 router.get('/', authenticate, requireScope('notification:read'), (req, res) => {
   const ward = req.query.ward || req.actor.ward || undefined;
@@ -21,6 +29,20 @@ router.post('/:id/read', authenticate, requireScope('notification:read'), (req, 
 router.post('/read-all', authenticate, requireScope('notification:read'), (req, res) => {
   const ward = req.query.ward || req.actor.ward || undefined;
   res.json({ marked: notifications.markAllRead(ward) });
+});
+
+/**
+ * A phone asks to be woken for this person's alerts, including while the app
+ * is closed. Registering again is harmless and refreshes the binding.
+ */
+router.post('/devices', authenticate, requireScope('notification:read'), validate(deviceSchema), (req, res) => {
+  const device = push.register(req.body, req.actor);
+  res.status(201).json({ registered: true, ward: device.ward || 'all' });
+});
+
+/** Signing out on a phone stops its alerts. */
+router.post('/devices/remove', authenticate, validate(deviceSchema), (req, res) => {
+  res.json({ removed: push.unregister(req.body.token, req.actor) });
 });
 
 /**

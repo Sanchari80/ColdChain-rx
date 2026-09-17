@@ -10,6 +10,7 @@ const { samples } = require('../hl7/samples');
 const phi = require('../phi/deidentify');
 const coldChain = require('../coldchain/monitor');
 const notifications = require('../notifications/store');
+const push = require('../notifications/push');
 const audit = require('../audit/auditService');
 const { badRequest, notFound, conflict, forbidden } = require('../../util/errors');
 const logger = require('../../util/logger');
@@ -325,6 +326,7 @@ async function verify(indentId, actor, sourceIp) {
       courier: { id: '-', name: 'Not dispatched', role: 'Blocked at pharmacy' },
       etaIso: null,
       telemetry: { minCelsius: indent.coldChainSpec.minCelsius, maxCelsius: indent.coldChainSpec.maxCelsius },
+      actor,
     });
   }
 
@@ -425,6 +427,7 @@ async function dispense(indentId, { courierId, overrideReason, forceExcursion = 
     courier,
     etaIso,
     telemetry,
+    actor,
   });
 
   return indent;
@@ -470,6 +473,7 @@ async function markDelivered(indentId, { receivedBy }, actor, sourceIp) {
     courier: indent.delivery.courier,
     etaIso: indent.delivery.eta,
     telemetry,
+    actor,
   });
 
   return indent;
@@ -505,7 +509,7 @@ async function cancel(indentId, { reason }, actor, sourceIp) {
  * patient. If a future change leaks one of them into the alert, publishing
  * fails instead of succeeding quietly.
  */
-async function publishAlert(indent, { status, severity, courier, etaIso, telemetry }) {
+async function publishAlert(indent, { status, severity, courier, etaIso, telemetry, actor }) {
   const patient = await fhir.read('Patient', indent.patientId);
 
   const alert = phi.buildWardAlert({
@@ -531,6 +535,9 @@ async function publishAlert(indent, { status, severity, courier, etaIso, telemet
   const published = notifications.publish(alert);
   indent.alerts.push(published.id);
   logger.info('ward.alert.published', { indentId: indent.id, status, severity });
+  // Phones hear about it even with the app closed. Not awaited: the ward queue
+  // must not wait on a third-party push service.
+  push.sendAlert(published, { excludeStaffId: actor && actor.id });
   return published;
 }
 
@@ -560,7 +567,15 @@ function reset() {
 }
 
 /** Restores the baseline ward queue the service ships with. */
-async function restoreBaseline(actor = { id: 'SYSTEM', name: 'Interface engine', role: 'system' }) {
+/**
+ * Rebuilding the starting queue replays verifications and a dispense. Those are
+ * not news to anyone, so no phone is woken up for them.
+ */
+function restoreBaseline(actor) {
+  return push.withoutPush(() => rebuildBaseline(actor));
+}
+
+async function rebuildBaseline(actor = { id: 'SYSTEM', name: 'Interface engine', role: 'system' }) {
   reset();
   const messages = [
     samples.valid(),

@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Platform } from 'react-native';
 import { createClient, defaultBaseUrl } from '../api/client';
+import { currentPushToken } from '../utils/notifications';
 
 const AuthContext = createContext(null);
 
@@ -131,10 +132,13 @@ export function AuthProvider({ children }) {
   }, [client]);
 
   const signOut = useCallback(() => {
+    // This phone stops receiving pushes for the person signing out.
+    const pushToken = currentPushToken();
+    if (pushToken && tokenRef.current) client.post('/notifications/devices/remove', { token: pushToken }).catch(() => {});
     tokenRef.current = null;
     setUser(null);
     setError(null);
-  }, []);
+  }, [client]);
 
   const setBaseUrl = useCallback((next) => {
     const cleaned = String(next || '').trim().replace(/\/+$/, '');
