@@ -8,3 +8,6 @@ dist/
 # Firebase service account keys are secrets. They go to EAS, never to git.
 *firebase-adminsdk*.json
 *service-account*.json
+
+# Personal notes, not part of the project
+MY-NOTES.txt
