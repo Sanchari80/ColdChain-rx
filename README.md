@@ -17,11 +17,16 @@ Open it in any browser, on a phone or a computer. Nothing to install.
 
 [**Download the APK**](https://github.com/Sanchari80/ColdChain-rx/releases/download/v1.0.0/ColdChain-Rx-v1.0.0.apk) (71 MB)
 
-Install it on an Android phone and sign in with any account below. Android will ask
-you to allow an app from outside the Play Store. Allow notifications when the app
-asks: ward alerts then arrive as push notifications, even while the app is closed.
+Install it on an Android phone and sign in with any account below.
 
-The browser demo above works on iPhone as well.
+Android shows a warning for any app installed outside the Play Store, so tap
+**More details** and then **Install anyway**. The app is signed, and the build that
+produced it is public: see the [build log](https://expo.dev/accounts/sktsoftwareland80s-team/projects/coldchain-rx/builds/1e38c0b9-3514-4ce1-b829-b16b9784d31b).
+
+Allow notifications when the app asks. Ward alerts then arrive as push
+notifications, even while the app is closed.
+
+On iPhone, use the browser demo above. It looks and behaves the same.
 
 ## Sign in
 
