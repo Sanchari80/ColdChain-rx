@@ -57,8 +57,10 @@ Use two browser windows, for example a normal window and a private one, or a pho
 5. **Open IND-2026-0094.** It is on the way, and its temperature has gone out of range.
 6. **Open the Audit tab** to see every action recorded, with a live tamper check at the top.
 
-Everyone using the demo shares the same data. It goes back to the starting state
-whenever the server restarts.
+Everyone using the demo shares the same data, so someone may have worked through it
+before you. To put it back to the starting state, sign in as the **administrator**
+`ADM1004` / `7712` and tap **Settings → Reset the ward queue**. It also resets by
+itself whenever the server restarts.
 
 ## How it meets Case 1
 
