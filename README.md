@@ -13,6 +13,16 @@ Open it in any browser, on a phone or a computer. Nothing to install.
 > The demo runs on a free server. If it has been idle, the first visit can take
 > up to a minute to load. After that it is fast.
 
+## Android app
+
+[**Download the APK**](https://expo.dev/artifacts/eas/5M0nSDcYV1CsQQJrGS0cWT8t5ARAnNkQsYZvwfQR2i8.apk) (71 MB)
+
+Install it on an Android phone and sign in with any account below. Android will ask
+you to allow an app from outside the Play Store. Allow notifications when the app
+asks: ward alerts then arrive as push notifications, even while the app is closed.
+
+The browser demo above works on iPhone as well.
+
 ## Sign in
 
 | Role | Name | Staff ID | PIN |
