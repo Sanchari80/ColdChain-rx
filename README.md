@@ -15,7 +15,7 @@ Open it in any browser, on a phone or a computer. Nothing to install.
 
 ## Android app
 
-[**Download the APK**](https://expo.dev/artifacts/eas/5M0nSDcYV1CsQQJrGS0cWT8t5ARAnNkQsYZvwfQR2i8.apk) (71 MB)
+[**Download the APK**](https://github.com/Sanchari80/ColdChain-rx/releases/download/v1.0.0/ColdChain-Rx-v1.0.0.apk) (71 MB)
 
 Install it on an Android phone and sign in with any account below. Android will ask
 you to allow an app from outside the Play Store. Allow notifications when the app
